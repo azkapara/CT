@@ -10,7 +10,13 @@ const source = path.join(__dirname, 'src', 'dashboard.html');
 const target = path.join(__dirname, 'api', '_page.js');
 
 if (!fs.existsSync(source)) {
-  console.error('Could not find src/dashboard.html');
+  // On Vercel, src/ is excluded on purpose (see .vercelignore) and api/_page.js
+  // is already committed, so there is nothing to do here.
+  if (fs.existsSync(target)) {
+    console.log('No src/dashboard.html here — api/_page.js is already built. Skipping.');
+    process.exit(0);
+  }
+  console.error('Could not find src/dashboard.html, and api/_page.js does not exist yet.');
   process.exit(1);
 }
 
