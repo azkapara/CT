@@ -9,8 +9,8 @@
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <script>
 tailwind.config={theme:{extend:{colors:{
-  navy:{700:'#1E4076',800:'#193califa',900:'#16305C'},
-  brick:{600:'#8F3B36',700:'#7C332F'}
+  navy :{50:'#EEF4FB',600:'#2C528C',700:'#1E4076',800:'#193B6A',900:'#16305C'},
+  brick:{50:'#FBEDEB',100:'#F4DAD7',400:'#B15A55',500:'#A04A45',600:'#8F3B36',700:'#7C332F'}
 }}}}
 </script>
 <style>
@@ -18,6 +18,22 @@ tailwind.config={theme:{extend:{colors:{
   .tab-num{font-variant-numeric:tabular-nums}
   ::-webkit-scrollbar{width:9px;height:9px}
   ::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:5px}
+
+  /* focus ring for every interactive element, not just the ones Tailwind touched */
+  a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{
+    outline:2px solid #2C528C;outline-offset:2px;border-radius:6px}
+
+  /* hover tooltip — replaces the info icons that used to do nothing */
+  .tip{position:relative;display:inline-flex}
+  .tip::after{
+    content:attr(data-tip);display:none;position:absolute;left:50%;bottom:calc(100% + 9px);transform:translateX(-50%);
+    width:max-content;max-width:250px;white-space:normal;text-align:left;
+    background:#16305C;color:#fff;font-size:11px;line-height:1.5;font-weight:400;letter-spacing:0;
+    padding:8px 10px;border-radius:7px;z-index:60;pointer-events:none;
+    box-shadow:0 10px 24px rgba(15,32,64,.24)}
+  .tip:hover::after,.tip:focus-visible::after{display:block;animation:tipIn .12s ease-out}
+  @keyframes tipIn{from{opacity:0}to{opacity:1}}
+
   /* TV mode scales the whole content area up for 42–50" panels */
   body.tv .tv-up   {font-size:1.18em}
   body.tv .tv-hide {display:none !important}
@@ -25,14 +41,22 @@ tailwind.config={theme:{extend:{colors:{
   body.tv .hero-val{font-size:5.2rem !important;line-height:1}
   body.tv .kpi-lab {font-size:.95rem !important}
   body.tv table    {font-size:1.05rem}
+
+  /* brief shimmer while a filter change is applied */
+  main.busy{opacity:.45;transition:opacity .1s}
+
+  @media (max-width:1023px){
+    #sidebar{position:fixed;top:64px;bottom:0;left:0;z-index:30;box-shadow:0 0 40px rgba(15,32,64,.18)}
+    #scrim.on{position:fixed;inset:64px 0 0 0;background:rgba(15,32,64,.35);z-index:29}
+  }
 </style>
 </head>
 <body class="bg-slate-100 text-slate-800">
 
 <!-- ══════════ TOP BAR ══════════ -->
-<header class="bg-[#1E4076] text-white sticky top-0 z-40">
-  <div class="flex items-center gap-4 px-5 h-16">
-    <button onclick="toggleSidebar()" class="p-2 -ml-2 rounded hover:bg-white/10" title="Sembunyikan menu">
+<header class="bg-navy-700 text-white sticky top-0 z-40">
+  <div class="flex items-center gap-2 sm:gap-4 px-3 sm:px-5 h-16">
+    <button onclick="toggleSidebar()" class="p-2 -ml-2 rounded hover:bg-white/10" aria-label="Tampilkan atau sembunyikan menu">
       <i data-lucide="panel-left-close" id="icoSide" class="w-5 h-5"></i>
     </button>
 
@@ -42,28 +66,29 @@ tailwind.config={theme:{extend:{colors:{
       </div>
       <div class="flex items-baseline gap-3">
         <span class="font-bold text-lg tracking-tight">PARACORP</span>
-        <span class="text-white/70 text-sm tracking-[.18em] font-light">MANUFACTURING CONTROL TOWER</span>
+        <span class="text-white/70 text-sm tracking-[.18em] font-light hidden xl:inline">MANUFACTURING CONTROL TOWER</span>
       </div>
     </div>
 
     <!-- tier switch -->
-    <div class="ml-auto flex items-center bg-white/10 rounded-lg p-1 tv-hide">
-      <button onclick="setTier(this,'strategic')" data-tier class="px-4 py-1.5 rounded-md text-sm font-semibold bg-white text-[#1E4076]">Strategic</button>
-      <button onclick="setTier(this,'tactical')" data-tier class="px-4 py-1.5 rounded-md text-sm text-white/80 hover:text-white">Tactical</button>
-      <button onclick="setTier(this,'operational')" data-tier class="px-4 py-1.5 rounded-md text-sm text-white/80 hover:text-white">Operational</button>
+    <div class="ml-auto hidden lg:flex items-center bg-white/10 rounded-lg p-1 tv-hide" role="group" aria-label="Tingkat detail">
+      <button onclick="setTier('strategic')"   data-tier="strategic"   class="px-4 py-1.5 rounded-md text-sm">Strategic</button>
+      <button onclick="setTier('tactical')"    data-tier="tactical"    class="px-4 py-1.5 rounded-md text-sm">Tactical</button>
+      <button onclick="setTier('operational')" data-tier="operational" class="px-4 py-1.5 rounded-md text-sm">Operational</button>
     </div>
 
-    <div class="flex items-center gap-2 pl-4 ml-2 border-l border-white/20">
+    <div class="flex items-center gap-2 pl-3 lg:pl-4 ml-auto lg:ml-2 border-l border-white/20">
       <button onclick="toggleTV()" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-sm">
-        <i data-lucide="tv" class="w-4 h-4"></i><span id="tvLabel">TV Mode</span>
+        <i data-lucide="tv" class="w-4 h-4"></i><span id="tvLabel" class="hidden sm:inline">TV Mode</span>
       </button>
-      <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-400/20 text-amber-200 text-sm tv-hide">
-        <i data-lucide="bell" class="w-4 h-4"></i>2 Alert
+      <button onclick="jump('#sec-alerts')" id="bellChip"
+              class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-400/20 text-amber-200 text-sm tv-hide hover:bg-amber-400/30">
+        <i data-lucide="bell" class="w-4 h-4"></i><span data-f="alertCount">0</span><span class="hidden sm:inline"> Alert</span>
+      </button>
+      <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-400/20 text-emerald-200 text-sm tab-num">
+        <span class="w-2 h-2 rounded-full bg-emerald-400"></span><span class="hidden sm:inline">Live&nbsp;</span><span id="liveClock">60:00</span>
       </div>
-      <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-400/20 text-emerald-200 text-sm">
-        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>Live 59:12
-      </div>
-      <div class="text-right leading-tight pl-3 tv-hide">
+      <div class="text-right leading-tight pl-3 tv-hide hidden 2xl:block">
         <p class="text-sm font-semibold">Eko B. Satriyo</p>
         <p class="text-xs text-white/60">Plant Performance Lead</p>
       </div>
@@ -72,57 +97,61 @@ tailwind.config={theme:{extend:{colors:{
 </header>
 
 <div class="flex">
+  <div id="scrim" onclick="toggleSidebar()"></div>
 
   <!-- ══════════ SIDEBAR ══════════ -->
-  <aside id="sidebar" class="w-60 shrink-0 bg-white border-r border-slate-200 min-h-[calc(100vh-64px)] py-4 transition-all">
-    <nav class="px-3 space-y-1">
-      <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-[#EEF4FB] text-[#1E4076] font-semibold text-sm">
+  <aside id="sidebar" class="w-60 shrink-0 bg-white border-r border-slate-200 min-h-[calc(100vh-64px)] py-4 transition-all overflow-y-auto">
+    <nav class="px-3 space-y-1" id="nav">
+      <a href="#top" data-nav="#top" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm cursor-pointer">
         <i data-lucide="layout-dashboard" class="w-[18px] h-[18px]"></i>Overview</a>
-      <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 text-sm">
+      <a href="#sec-alerts" data-nav="#sec-alerts" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm cursor-pointer">
         <i data-lucide="bell-ring" class="w-[18px] h-[18px]"></i>Alert Center
-        <span class="ml-auto text-xs bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded font-semibold">2</span></a>
-      <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 text-sm">
+        <span class="ml-auto text-xs bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded font-semibold" data-f="alertCount">0</span></a>
+      <a href="#sec-kpi1" data-nav="#sec-kpi1" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm cursor-pointer">
         <i data-lucide="factory" class="w-[18px] h-[18px]"></i>Production</a>
-      <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 text-sm">
+      <a href="#sec-table" data-nav="#sec-table" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm cursor-pointer">
         <i data-lucide="timer" class="w-[18px] h-[18px]"></i>Lead Time</a>
-      <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 text-sm">
-        <i data-lucide="shield-check" class="w-[18px] h-[18px]"></i>Quality</a>
-      <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 text-sm">
+      <a href="#sec-hero" data-nav="#sec-hero" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm cursor-pointer">
+        <i data-lucide="shield-check" class="w-[18px] h-[18px]"></i>Quality &amp; OEE</a>
+      <a href="#sec-kpi2" data-nav="#sec-kpi2" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm cursor-pointer">
         <i data-lucide="zap" class="w-[18px] h-[18px]"></i>Energy</a>
-      <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 text-sm">
-        <i data-lucide="bar-chart-3" class="w-[18px] h-[18px]"></i>Daily Trend</a>
-      <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 text-sm">
-        <i data-lucide="file-text" class="w-[18px] h-[18px]"></i>Reports</a>
+      <a href="#sec-trend" data-nav="#sec-trend" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm cursor-pointer">
+        <i data-lucide="bar-chart-3" class="w-[18px] h-[18px]"></i>Trend</a>
+      <span class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-400 text-sm cursor-not-allowed" title="Belum tersedia di rilis ini">
+        <i data-lucide="file-text" class="w-[18px] h-[18px]"></i>Reports
+        <span class="ml-auto text-[10px] bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded font-semibold">SOON</span></span>
     </nav>
     <div class="mt-6 pt-4 px-3 border-t border-slate-100 space-y-1">
-      <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-500 hover:bg-slate-50 text-sm">
-        <i data-lucide="settings" class="w-[18px] h-[18px]"></i>Settings</a>
-      <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-500 hover:bg-slate-50 text-sm">
+      <span class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-400 text-sm cursor-not-allowed" title="Belum tersedia di rilis ini">
+        <i data-lucide="settings" class="w-[18px] h-[18px]"></i>Settings
+        <span class="ml-auto text-[10px] bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded font-semibold">SOON</span></span>
+      <a href="/api/logout" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 text-sm">
         <i data-lucide="log-out" class="w-[18px] h-[18px]"></i>Sign Out</a>
     </div>
     <div class="mx-3 mt-6 p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-500 leading-relaxed">
       <p class="font-semibold text-slate-700 mb-1">Sumber data</p>
       SAP S/4HANA · EWM · FRO<br>→ governed dbt marts<br>
-      <span class="text-slate-400">Refresh terakhir 14:00 WIB</span>
+      <span class="text-slate-400">Refresh terakhir <span id="lastRefresh">—</span> WIB</span>
     </div>
   </aside>
 
   <!-- ══════════ MAIN ══════════ -->
-  <main class="flex-1 min-w-0 p-6 tv-up">
+  <main class="flex-1 min-w-0 p-6 tv-up" id="top">
 
     <!-- Title + FILTER BAR -->
     <div class="flex items-start justify-between gap-6 flex-wrap mb-5">
       <div>
-        <h1 class="text-2xl font-bold text-[#1E4076]">Manufacturing Overview</h1>
-        <p class="text-sm text-slate-500 mt-0.5">Visibilitas performa produksi lintas plant · <span id="ctxLabel">Year To Date</span> · <span id="ctxPlant">All Plant</span></p>
+        <h1 class="text-2xl font-bold text-navy-700">Manufacturing Overview</h1>
+        <p class="text-sm text-slate-500 mt-0.5">Visibilitas performa produksi lintas plant · <span data-f="ctxLabel">—</span> · <span data-f="ctxPlant">—</span></p>
+        <p class="text-xs text-slate-400 mt-1" id="tierNote"></p>
       </div>
 
       <div class="flex items-end gap-3 flex-wrap">
         <!-- Quick Filter -->
         <div>
-          <label class="block text-[11px] font-semibold text-slate-500 mb-1.5">Quick Filter</label>
+          <label for="quickFilter" class="block text-[11px] font-semibold text-slate-500 mb-1.5">Quick Filter</label>
           <div class="relative">
-            <select id="quickFilter" onchange="onQuick()" class="appearance-none bg-white border border-slate-300 rounded-lg pl-9 pr-9 py-2.5 text-sm font-medium text-slate-700 hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1E4076]/30 min-w-[190px]">
+            <select id="quickFilter" onchange="apply()" class="appearance-none bg-white border border-slate-300 rounded-lg pl-9 pr-9 py-2.5 text-sm font-medium text-slate-700 hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-navy-700/30 min-w-[190px]">
               <option value="Year To Date" selected>Year To Date</option>
               <option value="This Month">This Month</option>
               <option value="This Week">This Week</option>
@@ -140,21 +169,21 @@ tailwind.config={theme:{extend:{colors:{
         <!-- Custom range: hidden unless Custom Range selected -->
         <div id="customRange" class="hidden items-end gap-2">
           <div>
-            <label class="block text-[11px] font-semibold text-slate-500 mb-1.5">Start Date</label>
-            <input type="date" value="2026-01-01" class="bg-white border border-slate-300 rounded-lg px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#1E4076]/30">
+            <label for="dStart" class="block text-[11px] font-semibold text-slate-500 mb-1.5">Start Date</label>
+            <input id="dStart" type="date" value="2026-01-01" onchange="apply()" class="bg-white border border-slate-300 rounded-lg px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-navy-700/30">
           </div>
           <span class="pb-3 text-slate-400 text-sm">—</span>
           <div>
-            <label class="block text-[11px] font-semibold text-slate-500 mb-1.5">End Date</label>
-            <input type="date" value="2026-09-10" class="bg-white border border-slate-300 rounded-lg px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#1E4076]/30">
+            <label for="dEnd" class="block text-[11px] font-semibold text-slate-500 mb-1.5">End Date</label>
+            <input id="dEnd" type="date" value="2026-09-10" onchange="apply()" class="bg-white border border-slate-300 rounded-lg px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-navy-700/30">
           </div>
         </div>
 
         <!-- Plant -->
         <div>
-          <label class="block text-[11px] font-semibold text-slate-500 mb-1.5">Plant</label>
+          <label for="plantSel" class="block text-[11px] font-semibold text-slate-500 mb-1.5">Plant</label>
           <div class="relative">
-            <select id="plantSel" onchange="onPlant()" class="appearance-none bg-white border border-slate-300 rounded-lg pl-9 pr-9 py-2.5 text-sm font-medium text-slate-700 hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1E4076]/30 min-w-[150px]">
+            <select id="plantSel" onchange="apply()" class="appearance-none bg-white border border-slate-300 rounded-lg pl-9 pr-9 py-2.5 text-sm font-medium text-slate-700 hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-navy-700/30 min-w-[150px]">
               <option>All Plant</option>
               <option>Jatake 1</option>
               <option>Jatake 2</option>
@@ -166,11 +195,25 @@ tailwind.config={theme:{extend:{colors:{
           </div>
         </div>
 
+        <!-- Detail level: stands in for the tier switch, which has no room in the top bar -->
+        <div class="lg:hidden">
+          <label for="tierSel" class="block text-[11px] font-semibold text-slate-500 mb-1.5">Detail</label>
+          <div class="relative">
+            <select id="tierSel" onchange="setTier(this.value)" class="appearance-none bg-white border border-slate-300 rounded-lg pl-9 pr-9 py-2.5 text-sm font-medium text-slate-700 hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-navy-700/30 min-w-[150px]">
+              <option value="strategic">Strategic</option>
+              <option value="tactical">Tactical</option>
+              <option value="operational">Operational</option>
+            </select>
+            <i data-lucide="layers" class="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none"></i>
+            <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 absolute right-2.5 top-3 pointer-events-none"></i>
+          </div>
+        </div>
+
         <!-- Data Level -->
         <div>
-          <label class="block text-[11px] font-semibold text-slate-500 mb-1.5">Data Level</label>
+          <label for="levelSel" class="block text-[11px] font-semibold text-slate-500 mb-1.5">Data Level</label>
           <div class="relative">
-            <select id="levelSel" onchange="onLevel()" class="appearance-none bg-white border border-slate-300 rounded-lg pl-9 pr-9 py-2.5 text-sm font-medium text-slate-700 hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1E4076]/30 min-w-[140px]">
+            <select id="levelSel" onchange="apply()" class="appearance-none bg-white border border-slate-300 rounded-lg pl-9 pr-9 py-2.5 text-sm font-medium text-slate-700 hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-navy-700/30 min-w-[140px]">
               <option>Daily</option><option selected>Weekly</option><option>Monthly</option><option>Quarterly</option>
             </select>
             <i data-lucide="calendar-days" class="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none"></i>
@@ -181,211 +224,207 @@ tailwind.config={theme:{extend:{colors:{
     </div>
 
     <!-- AI SUMMARY -->
-    <div class="bg-[#1E4076] rounded-xl px-5 py-4 mb-4 flex items-start gap-4">
+    <div id="sec-summary" data-tier-min="strategic" class="bg-navy-700 rounded-xl px-5 py-4 mb-4 flex items-start gap-4">
       <div class="w-9 h-9 rounded-lg bg-white/15 flex items-center justify-center shrink-0">
         <i data-lucide="sparkles" class="w-[18px] h-[18px] text-white"></i>
       </div>
       <div class="flex-1 min-w-0">
         <p class="text-[11px] font-bold text-white/60 tracking-[.12em] mb-1">AI SUMMARY</p>
-        <p class="text-[15px] text-white leading-relaxed">
-          OEE plant berada di <span class="font-bold underline decoration-white/40">37,0%</span>, jauh di bawah target 65%, meskipun Right-First-Time mencapai 100% dan Pack Loss hanya 0,3%.
-          Bulk Loss turun signifikan menjadi 2,5% (−68,4% MoM) dan Lead Time Nett <span class="font-bold underline decoration-white/40">5,07 hari</span> menunjukkan perbaikan alur produksi.
-          Prioritas berikutnya: <span class="font-semibold">ketersediaan mesin</span> — Availability menyumbang 30,4 poin gap OEE.
-        </p>
+        <p class="text-[15px] text-white leading-relaxed" data-f="aiSummary"></p>
       </div>
       <div class="text-right shrink-0 tv-hide">
-        <p class="text-xs text-white/50">baru saja</p>
-        <button class="mt-1 flex items-center gap-1.5 text-xs text-white/80 hover:text-white"><i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>Refresh</button>
+        <p class="text-xs text-white/50" id="aiAge">baru saja</p>
+        <button onclick="apply(true)" class="mt-1 flex items-center gap-1.5 text-xs text-white/80 hover:text-white ml-auto">
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>Refresh</button>
       </div>
     </div>
 
     <!-- ALERTS -->
-    <div class="bg-white border border-slate-200 rounded-xl mb-6 overflow-hidden">
-      <div class="flex items-center gap-2.5 px-5 py-3 border-b border-slate-100">
+    <div id="sec-alerts" data-tier-min="strategic" class="bg-white border border-slate-200 rounded-xl mb-6 overflow-hidden scroll-mt-20">
+      <div class="flex items-center gap-2.5 px-5 py-3 border-b border-slate-100 flex-wrap">
         <i data-lucide="triangle-alert" class="w-[18px] h-[18px] text-amber-500"></i>
         <h3 class="font-semibold text-slate-800 text-sm">KPI Alerts</h3>
-        <span class="px-2 py-0.5 rounded text-xs font-bold bg-rose-100 text-rose-700">1 Critical</span>
-        <span class="px-2 py-0.5 rounded text-xs font-bold bg-amber-100 text-amber-700">1 Warning</span>
-        <button class="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1E4076] text-white text-xs font-medium">
+        <span class="px-2 py-0.5 rounded text-xs font-bold bg-rose-100 text-rose-700 empty:hidden" data-f="critBadge"></span>
+        <span class="px-2 py-0.5 rounded text-xs font-bold bg-amber-100 text-amber-700 empty:hidden" data-f="warnBadge"></span>
+        <button onclick="copyAlerts()" class="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-navy-700 hover:bg-navy-800 text-white text-xs font-medium">
           <i data-lucide="send" class="w-3.5 h-3.5"></i>Kirim ke Teams
         </button>
       </div>
-      <div class="divide-y divide-slate-100">
-        <div class="flex items-center gap-3 px-5 py-3 bg-rose-50/60">
-          <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-rose-600 text-white">CRITICAL</span>
-          <span class="font-semibold text-slate-800 text-sm w-24">OEE</span>
-          <span class="text-sm text-slate-600">37,0% — jauh di bawah target 65%, gap 28,0 poin selama 6 periode berturut</span>
-          <a class="ml-auto text-xs font-medium text-[#1E4076] hover:underline shrink-0">Buka analisis →</a>
-        </div>
-        <div class="flex items-center gap-3 px-5 py-3">
-          <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-500 text-white">WARNING</span>
-          <span class="font-semibold text-slate-800 text-sm w-24">Lead Time</span>
-          <span class="text-sm text-slate-600">15,99 hari gross — 2,99 hari di atas standar 13,0 hari</span>
-          <a class="ml-auto text-xs font-medium text-[#1E4076] hover:underline shrink-0">Buka analisis →</a>
-        </div>
-      </div>
+      <div class="divide-y divide-slate-100" id="alertList"></div>
     </div>
 
     <!-- HERO KPI -->
-    <div class="bg-white border border-slate-200 rounded-xl mb-4 flex overflow-hidden">
-      <div class="w-1.5 bg-rose-600 shrink-0"></div>
-      <div class="flex-1 px-6 py-5 flex items-center gap-10 flex-wrap">
-        <div>
+    <div id="sec-hero" data-tier-min="strategic" class="bg-white border border-slate-200 rounded-xl mb-4 flex scroll-mt-20">
+      <div class="w-1.5 shrink-0 rounded-l-xl" data-f-cls="heroBar"></div>
+      <div class="flex-1 px-5 sm:px-6 py-5 flex items-center gap-6 xl:gap-10 flex-wrap">
+        <div class="min-w-0">
           <div class="flex items-center gap-2">
             <p class="text-xs font-bold text-slate-500 tracking-[.1em] kpi-lab">OVERALL EQUIPMENT EFFECTIVENESS</p>
-            <i data-lucide="info" class="w-3.5 h-3.5 text-slate-300"></i>
+            <span class="tip" tabindex="0" data-tip="OEE = Availability × Performance × Quality. Dihitung pada grain mesin-shift lalu ditimbang jam operasi, bukan rata-rata dari rata-rata.">
+              <i data-lucide="info" class="w-3.5 h-3.5 text-slate-300"></i></span>
           </div>
           <div class="flex items-baseline gap-2 mt-1">
-            <span class="hero-val text-6xl font-bold text-rose-700 tab-num">37.0</span>
+            <span class="hero-val text-6xl font-bold tab-num" data-f="oee" data-f-cls="oeeText">—</span>
             <span class="text-xl text-slate-400">%</span>
           </div>
-          <p class="text-sm text-slate-500 mt-1">Target 65,0% · gap <span class="font-semibold text-rose-700">28,0 poin</span></p>
+          <p class="text-sm text-slate-500 mt-1">Target <span data-f="oeeTarget"></span>% · gap <span class="font-semibold" data-f="oeeGap" data-f-cls="oeeText"></span></p>
         </div>
 
         <div class="h-16 w-px bg-slate-200 tv-hide"></div>
 
-        <div class="grid grid-cols-3 gap-8">
+        <div class="grid grid-cols-3 gap-5 sm:gap-8 min-w-0">
           <div>
             <p class="text-xs text-slate-500 kpi-lab">Availability</p>
-            <p class="text-2xl font-bold text-rose-700 tab-num mt-0.5">44.8<span class="text-sm text-slate-400 font-normal">%</span></p>
-            <p class="text-[11px] text-rose-600 font-medium">penyumbang gap utama</p>
+            <p class="text-2xl font-bold tab-num mt-0.5" data-f-cls="availText"><span data-f="avail"></span><span class="text-sm text-slate-400 font-normal">%</span></p>
+            <p class="text-[11px] font-medium" data-f="availNote" data-f-cls="availNoteCls"></p>
           </div>
           <div>
             <p class="text-xs text-slate-500 kpi-lab">Performance</p>
-            <p class="text-2xl font-bold text-amber-600 tab-num mt-0.5">82.6<span class="text-sm text-slate-400 font-normal">%</span></p>
-            <p class="text-[11px] text-slate-400">target 90%</p>
+            <p class="text-2xl font-bold tab-num mt-0.5" data-f-cls="perfText"><span data-f="perf"></span><span class="text-sm text-slate-400 font-normal">%</span></p>
+            <p class="text-[11px] font-medium" data-f="perfNote" data-f-cls="perfNoteCls"></p>
           </div>
           <div>
             <p class="text-xs text-slate-500 kpi-lab">Quality</p>
-            <p class="text-2xl font-bold text-emerald-700 tab-num mt-0.5">100.0<span class="text-sm text-slate-400 font-normal">%</span></p>
-            <p class="text-[11px] text-emerald-600 font-medium">memenuhi target</p>
+            <p class="text-2xl font-bold tab-num mt-0.5" data-f-cls="qualText"><span data-f="qual"></span><span class="text-sm text-slate-400 font-normal">%</span></p>
+            <p class="text-[11px] font-medium" data-f="qualNote" data-f-cls="qualNoteCls"></p>
           </div>
         </div>
 
-        <div class="ml-auto w-56 h-16"><canvas id="heroSpark"></canvas></div>
+        <div class="ml-auto w-56 h-16"><canvas id="heroSpark" aria-label="Tren OEE 24 periode terakhir"></canvas></div>
       </div>
     </div>
 
     <!-- KPI GRID ROW 1 -->
+    <div id="sec-kpi1" data-tier-min="strategic" class="scroll-mt-20">
     <p class="text-[11px] font-bold text-slate-400 tracking-[.14em] mb-2.5 mt-6">OPERATION KPIS</p>
     <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
 
-      <div class="bg-white border border-slate-200 rounded-xl flex overflow-hidden">
-        <div class="w-1.5 bg-amber-500 shrink-0"></div>
+      <div class="bg-white border border-slate-200 rounded-xl flex">
+        <div class="w-1.5 shrink-0 rounded-l-xl" data-f-cls="ltBar"></div>
         <div class="flex-1 p-5">
-          <div class="flex items-center gap-1.5"><p class="text-xs font-bold text-slate-500 tracking-[.08em] kpi-lab">LEAD TIME</p><i data-lucide="info" class="w-3.5 h-3.5 text-slate-300"></i></div>
+          <div class="flex items-center gap-1.5"><p class="text-xs font-bold text-slate-500 tracking-[.08em] kpi-lab">LEAD TIME</p>
+            <span class="tip" tabindex="0" data-tip="Gross lead time diagregasi pada grain PO (P50). Nett mengecualikan waktu tunggu terencana dan hari libur pabrik."><i data-lucide="info" class="w-3.5 h-3.5 text-slate-300"></i></span></div>
           <div class="flex items-baseline gap-1.5 mt-2">
-            <span class="kpi-val text-4xl font-bold text-amber-600 tab-num">15.99</span><span class="text-sm text-slate-400">days</span>
+            <span class="kpi-val text-4xl font-bold tab-num" data-f="ltGross" data-f-cls="ltText"></span><span class="text-sm text-slate-400">hari</span>
           </div>
           <p class="text-xs text-slate-500 mt-1.5">Gross · PO Created → NDC Receive</p>
-          <p class="text-xs text-slate-400">Nett 5,07 hari · standar 13,0</p>
+          <p class="text-xs text-slate-400">Nett <span data-f="ltNett"></span> hari · standar <span data-f="ltTarget"></span></p>
           <div class="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
-            <span class="text-xs font-medium text-emerald-600">↓ 4,2% vs periode lalu</span>
-            <span class="text-xs text-slate-400 tab-num">P90 24,6 d</span>
+            <span class="text-xs font-medium" data-f="ltDelta"></span>
+            <span class="text-xs text-slate-400 tab-num">P90 <span data-f="ltP90"></span> d</span>
           </div>
         </div>
       </div>
 
-      <div class="bg-white border border-slate-200 rounded-xl flex overflow-hidden">
-        <div class="w-1.5 bg-emerald-600 shrink-0"></div>
+      <div class="bg-white border border-slate-200 rounded-xl flex">
+        <div class="w-1.5 shrink-0 rounded-l-xl" data-f-cls="lossBar"></div>
         <div class="flex-1 p-5">
-          <div class="flex items-center gap-1.5"><p class="text-xs font-bold text-slate-500 tracking-[.08em] kpi-lab">YIELD / LOSS</p><i data-lucide="info" class="w-3.5 h-3.5 text-slate-300"></i></div>
+          <div class="flex items-center gap-1.5"><p class="text-xs font-bold text-slate-500 tracking-[.08em] kpi-lab">YIELD / LOSS</p>
+            <span class="tip" tabindex="0" data-tip="Bulk Loss = selisih bulk ditimbang vs bulk terpakai. Pack Loss = reject di lini kemas. Keduanya relatif terhadap input, bukan output."><i data-lucide="info" class="w-3.5 h-3.5 text-slate-300"></i></span></div>
           <div class="flex items-baseline gap-6 mt-2">
             <div>
-              <div class="flex items-baseline gap-1"><span class="kpi-val text-4xl font-bold text-slate-900 tab-num">2.5</span><span class="text-sm text-slate-400">%</span></div>
+              <div class="flex items-baseline gap-1"><span class="kpi-val text-4xl font-bold text-slate-900 tab-num" data-f="bulk"></span><span class="text-sm text-slate-400">%</span></div>
               <p class="text-xs text-slate-500 mt-0.5">Bulk Loss</p>
             </div>
             <div>
-              <div class="flex items-baseline gap-1"><span class="kpi-val text-4xl font-bold text-slate-900 tab-num">0.3</span><span class="text-sm text-slate-400">%</span></div>
+              <div class="flex items-baseline gap-1"><span class="kpi-val text-4xl font-bold text-slate-900 tab-num" data-f="pack"></span><span class="text-sm text-slate-400">%</span></div>
               <p class="text-xs text-slate-500 mt-0.5">Pack Loss</p>
             </div>
           </div>
           <div class="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
-            <span class="text-xs font-medium text-emerald-600">↓ 68,4% MoM</span>
-            <span class="text-xs text-slate-400 tab-num">~379.645 kg</span>
+            <span class="text-xs font-medium" data-f="lossDelta"></span>
+            <span class="text-xs text-slate-400 tab-num">~<span data-f="lossKg"></span> kg</span>
           </div>
         </div>
       </div>
 
-      <div class="bg-white border border-slate-200 rounded-xl flex overflow-hidden">
-        <div class="w-1.5 bg-emerald-600 shrink-0"></div>
+      <div class="bg-white border border-slate-200 rounded-xl flex">
+        <div class="w-1.5 shrink-0 rounded-l-xl" data-f-cls="rftBar"></div>
         <div class="flex-1 p-5">
-          <div class="flex items-center gap-1.5"><p class="text-xs font-bold text-slate-500 tracking-[.08em] kpi-lab">RIGHT FIRST TIME</p><i data-lucide="info" class="w-3.5 h-3.5 text-slate-300"></i></div>
+          <div class="flex items-center gap-1.5"><p class="text-xs font-bold text-slate-500 tracking-[.08em] kpi-lab">RIGHT FIRST TIME</p>
+            <span class="tip" tabindex="0" data-tip="Batch yang lolos QC pada pemeriksaan pertama, tanpa rework atau deviasi. Batch trial dan cancelled dikecualikan."><i data-lucide="info" class="w-3.5 h-3.5 text-slate-300"></i></span></div>
           <div class="flex items-baseline gap-1.5 mt-2">
-            <span class="kpi-val text-4xl font-bold text-slate-900 tab-num">100.0</span><span class="text-sm text-slate-400">%</span>
+            <span class="kpi-val text-4xl font-bold text-slate-900 tab-num" data-f="rft"></span><span class="text-sm text-slate-400">%</span>
           </div>
           <p class="text-xs text-slate-500 mt-1.5">First Time Passed Rate</p>
-          <p class="text-xs text-emerald-600 font-medium">✓ memenuhi target 98%</p>
+          <p class="text-xs font-medium" data-f="rftNote" data-f-cls="rftNoteCls"></p>
           <div class="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
-            <span class="text-xs font-medium text-slate-400">tidak berubah</span>
-            <span class="text-xs text-slate-400 tab-num">1.502 batch</span>
+            <span class="text-xs font-medium" data-f="rftDelta"></span>
+            <span class="text-xs text-slate-400 tab-num"><span data-f="batches"></span> batch</span>
           </div>
         </div>
       </div>
 
-      <div class="bg-white border border-slate-200 rounded-xl flex overflow-hidden">
-        <div class="w-1.5 bg-emerald-600 shrink-0"></div>
+      <div class="bg-white border border-slate-200 rounded-xl flex">
+        <div class="w-1.5 shrink-0 rounded-l-xl bg-emerald-600"></div>
         <div class="flex-1 p-5">
-          <div class="flex items-center gap-1.5"><p class="text-xs font-bold text-slate-500 tracking-[.08em] kpi-lab">OUTPUT</p><i data-lucide="info" class="w-3.5 h-3.5 text-slate-300"></i></div>
+          <div class="flex items-center gap-1.5"><p class="text-xs font-bold text-slate-500 tracking-[.08em] kpi-lab">OUTPUT</p>
+            <span class="tip" tabindex="0" data-tip="Finished goods yang sudah di-release QC dan diterima NDC. Belum termasuk stok in-transit antar plant."><i data-lucide="info" class="w-3.5 h-3.5 text-slate-300"></i></span></div>
           <div class="flex items-baseline gap-1.5 mt-2">
-            <span class="kpi-val text-[2rem] font-bold text-slate-900 tab-num">276.056.771</span><span class="text-sm text-slate-400">pcs</span>
+            <span class="kpi-val text-[2rem] font-bold text-slate-900 tab-num" data-f="pcs"></span><span class="text-sm text-slate-400">pcs</span>
           </div>
-          <p class="text-xs text-slate-500 mt-0.5">Finished Goods released <span class="text-emerald-600 font-medium">+3,9%</span></p>
+          <p class="text-xs text-slate-500 mt-0.5">Finished Goods released <span data-f="pcsDelta"></span></p>
           <div class="mt-3 pt-3 border-t border-slate-100 flex items-baseline justify-between">
-            <span class="text-lg font-bold text-slate-900 tab-num">14.587.201 <span class="text-xs text-slate-400 font-normal">kg</span></span>
-            <span class="text-xs font-medium text-rose-600">↓ 10,5%</span>
+            <span class="text-lg font-bold text-slate-900 tab-num"><span data-f="kg"></span> <span class="text-xs text-slate-400 font-normal">kg</span></span>
+            <span class="text-xs font-medium" data-f="kgDelta"></span>
           </div>
         </div>
       </div>
     </div>
+    </div>
 
     <!-- KPI GRID ROW 2 -->
+    <div id="sec-kpi2" data-tier-min="tactical" class="scroll-mt-20">
     <p class="text-[11px] font-bold text-slate-400 tracking-[.14em] mb-2.5 mt-6">EQUIPMENT · PEOPLE · UTILITY</p>
     <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
 
-      <div class="bg-white border border-slate-200 rounded-xl flex overflow-hidden">
-        <div class="w-1.5 bg-amber-500 shrink-0"></div>
+      <div class="bg-white border border-slate-200 rounded-xl flex">
+        <div class="w-1.5 shrink-0 rounded-l-xl" data-f-cls="opeBar"></div>
         <div class="flex-1 p-5">
-          <div class="flex items-center gap-1.5"><p class="text-xs font-bold text-slate-500 tracking-[.08em] kpi-lab">OPE</p><i data-lucide="info" class="w-3.5 h-3.5 text-slate-300"></i></div>
-          <div class="flex items-baseline gap-1.5 mt-2"><span class="kpi-val text-4xl font-bold text-amber-600 tab-num">29.6</span><span class="text-sm text-slate-400">%</span></div>
+          <div class="flex items-center gap-1.5"><p class="text-xs font-bold text-slate-500 tracking-[.08em] kpi-lab">OPE</p>
+            <span class="tip" tabindex="0" data-tip="Overall Plant Effectiveness — OEE diperluas ke seluruh kalender pabrik, termasuk shift yang tidak dijalankan."><i data-lucide="info" class="w-3.5 h-3.5 text-slate-300"></i></span></div>
+          <div class="flex items-baseline gap-1.5 mt-2"><span class="kpi-val text-4xl font-bold tab-num" data-f="ope" data-f-cls="opeText"></span><span class="text-sm text-slate-400">%</span></div>
           <p class="text-xs text-slate-500 mt-1.5">Overall Plant Effectiveness</p>
           <div class="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
-            <span class="text-xs text-slate-400">target 60,0%</span>
-            <span class="text-xs font-semibold text-amber-600">gap 30,4 pts</span>
+            <span class="text-xs text-slate-400">target <span data-f="opeTarget"></span>%</span>
+            <span class="text-xs font-semibold" data-f="opeGap" data-f-cls="opeText"></span>
           </div>
         </div>
       </div>
 
-      <div class="bg-white border border-slate-200 rounded-xl flex overflow-hidden">
-        <div class="w-1.5 bg-emerald-600 shrink-0"></div>
+      <div class="bg-white border border-slate-200 rounded-xl flex">
+        <div class="w-1.5 shrink-0 rounded-l-xl" data-f-cls="prodBar"></div>
         <div class="flex-1 p-5">
-          <div class="flex items-center gap-1.5"><p class="text-xs font-bold text-slate-500 tracking-[.08em] kpi-lab">PRODUCTIVITY</p><i data-lucide="info" class="w-3.5 h-3.5 text-slate-300"></i></div>
-          <div class="flex items-baseline gap-1.5 mt-2"><span class="kpi-val text-4xl font-bold text-slate-900 tab-num">54.8</span><span class="text-sm text-slate-400">pcs/mh</span></div>
+          <div class="flex items-center gap-1.5"><p class="text-xs font-bold text-slate-500 tracking-[.08em] kpi-lab">PRODUCTIVITY</p>
+            <span class="tip" tabindex="0" data-tip="Pieces per manhour di lini downstream (kemas 1 → NDC), dihitung end-to-end termasuk jam changeover."><i data-lucide="info" class="w-3.5 h-3.5 text-slate-300"></i></span></div>
+          <div class="flex items-baseline gap-1.5 mt-2"><span class="kpi-val text-4xl font-bold tab-num" data-f="prod" data-f-cls="prodText"></span><span class="text-sm text-slate-400">pcs/mh</span></div>
           <p class="text-xs text-slate-500 mt-1.5">Downstream · E2E productivity</p>
           <div class="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
-            <span class="text-xs font-medium text-emerald-600">↑ 2,1% vs periode lalu</span>
-            <span class="text-xs text-slate-400">target 50,0</span>
+            <span class="text-xs font-medium" data-f="prodDelta"></span>
+            <span class="text-xs text-slate-400">target <span data-f="prodTarget"></span></span>
           </div>
         </div>
       </div>
 
-      <div class="bg-white border border-slate-200 rounded-xl flex overflow-hidden">
-        <div class="w-1.5 bg-rose-600 shrink-0"></div>
+      <div class="bg-white border border-slate-200 rounded-xl flex">
+        <div class="w-1.5 shrink-0 rounded-l-xl" data-f-cls="otBar"></div>
         <div class="flex-1 p-5">
-          <div class="flex items-center gap-1.5"><p class="text-xs font-bold text-slate-500 tracking-[.08em] kpi-lab">ON-TIME PO</p><i data-lucide="info" class="w-3.5 h-3.5 text-slate-300"></i></div>
-          <div class="flex items-baseline gap-1.5 mt-2"><span class="kpi-val text-4xl font-bold text-rose-700 tab-num">87.3</span><span class="text-sm text-slate-400">%</span></div>
+          <div class="flex items-center gap-1.5"><p class="text-xs font-bold text-slate-500 tracking-[.08em] kpi-lab">ON-TIME PO</p>
+            <span class="tip" tabindex="0" data-tip="PO yang selesai dalam standar lead time SKU-nya masing-masing (dim_kpi_target), bukan satu standar tunggal."><i data-lucide="info" class="w-3.5 h-3.5 text-slate-300"></i></span></div>
+          <div class="flex items-baseline gap-1.5 mt-2"><span class="kpi-val text-4xl font-bold tab-num" data-f="onTime" data-f-cls="otText"></span><span class="text-sm text-slate-400">%</span></div>
           <p class="text-xs text-slate-500 mt-1.5">PO selesai dalam standar SKU</p>
           <div class="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
-            <span class="text-xs font-medium text-emerald-600">↑ 4,0 pp</span>
-            <span class="text-xs text-slate-400">target 90%</span>
+            <span class="text-xs font-medium" data-f="otDelta"></span>
+            <span class="text-xs text-slate-400">target <span data-f="otTarget"></span>%</span>
           </div>
         </div>
       </div>
 
-      <div class="bg-white border border-slate-200 rounded-xl flex overflow-hidden">
-        <div class="w-1.5 bg-slate-300 shrink-0"></div>
+      <div class="bg-white border border-slate-200 rounded-xl flex">
+        <div class="w-1.5 bg-slate-300 shrink-0 rounded-l-xl"></div>
         <div class="flex-1 p-5">
-          <div class="flex items-center gap-1.5"><p class="text-xs font-bold text-slate-400 tracking-[.08em] kpi-lab">ENERGY INTENSITY</p><i data-lucide="lock" class="w-3.5 h-3.5 text-slate-300"></i></div>
+          <div class="flex items-center gap-1.5"><p class="text-xs font-bold text-slate-400 tracking-[.08em] kpi-lab">ENERGY INTENSITY</p>
+            <span class="tip" tabindex="0" data-tip="Belum ter-govern: sumber meter tersedia, tapi definisi pembagi (kWh per kg? per pcs? per jam operasi?) belum disepakati."><i data-lucide="lock" class="w-3.5 h-3.5 text-slate-300"></i></span></div>
           <div class="flex items-baseline gap-1.5 mt-2"><span class="kpi-val text-4xl font-bold text-slate-300 tab-num">—</span></div>
           <p class="text-xs text-slate-400 mt-1.5 leading-relaxed">Data pipeline aktif, definisi metrik belum ter-govern. Granularitas meter belum diputuskan.</p>
           <div class="mt-3 pt-3 border-t border-slate-100">
@@ -394,14 +433,15 @@ tailwind.config={theme:{extend:{colors:{
         </div>
       </div>
     </div>
+    </div>
 
     <!-- CHARTS -->
-    <div class="grid grid-cols-1 xl:grid-cols-3 gap-4 mt-6">
-      <div class="xl:col-span-2 bg-white border border-slate-200 rounded-xl p-5">
-        <div class="flex items-baseline justify-between mb-4">
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-4 mt-6" id="sec-trend">
+      <div id="cardMain" data-tier-min="strategic" class="xl:col-span-2 bg-white border border-slate-200 rounded-xl p-5 scroll-mt-20">
+        <div class="flex items-baseline justify-between mb-4 flex-wrap gap-2">
           <div>
-            <h3 class="font-bold text-[#1E4076]">OEE &amp; Lead Time Trend</h3>
-            <p class="text-xs text-slate-500 mt-0.5">Data level: <span id="lvlLabel" class="font-medium">Weekly</span> · garis putus-putus = target</p>
+            <h3 class="font-bold text-navy-700">OEE &amp; Lead Time Trend</h3>
+            <p class="text-xs text-slate-500 mt-0.5">Data level: <span data-f="lvlLabel" class="font-medium"></span> · garis putus-putus = target · titik terakhir = periode terpilih</p>
           </div>
           <div class="flex gap-1.5">
             <span class="px-2.5 py-1 rounded-md bg-slate-100 text-xs text-slate-600">OEE %</span>
@@ -411,206 +451,639 @@ tailwind.config={theme:{extend:{colors:{
         <div class="h-72"><canvas id="cMain"></canvas></div>
       </div>
 
-      <div class="bg-white border border-slate-200 rounded-xl p-5">
+      <div id="cardStage" data-tier-min="tactical" class="bg-white border border-slate-200 rounded-xl p-5">
         <div class="mb-4">
-          <h3 class="font-bold text-[#1E4076]">Lead Time per Stage</h3>
+          <h3 class="font-bold text-navy-700">Lead Time per Stage</h3>
           <p class="text-xs text-slate-500 mt-0.5">Gross, hari · diurutkan gap terbesar ke standar</p>
         </div>
         <div class="h-72"><canvas id="cStage"></canvas></div>
       </div>
     </div>
 
-    <!-- BREAKDOWN TABLE -->
-    <div class="bg-white border border-slate-200 rounded-xl mt-4 overflow-hidden">
-      <div class="flex items-center justify-between px-5 py-4">
+    <!-- BREAKDOWN -->
+    <div id="sec-table" data-tier-min="operational" class="bg-white border border-slate-200 rounded-xl mt-4 overflow-hidden scroll-mt-20">
+      <div class="flex items-center justify-between px-5 py-4 flex-wrap gap-3">
         <div>
-          <h3 class="text-lg font-bold text-[#1E4076]">Lead Time Breakdown per Plant</h3>
+          <h3 class="text-lg font-bold text-navy-700">Lead Time Breakdown per Plant</h3>
           <p class="text-xs text-slate-500 mt-0.5">Gross lead time diurai per stage · sel merah = di atas standar stage</p>
         </div>
         <div class="flex items-center bg-slate-100 rounded-full p-1">
-          <button class="px-4 py-1.5 rounded-full text-sm text-slate-600">Waterfall</button>
-          <button class="px-4 py-1.5 rounded-full text-sm font-semibold bg-[#1E4076] text-white">Table</button>
+          <button onclick="setView('waterfall')" data-view="waterfall" class="px-4 py-1.5 rounded-full text-sm">Waterfall</button>
+          <button onclick="setView('table')"     data-view="table"     class="px-4 py-1.5 rounded-full text-sm">Table</button>
         </div>
       </div>
 
-      <div class="overflow-x-auto px-5 pb-2">
+      <div id="viewTable" class="overflow-x-auto px-5 pb-2">
         <table class="w-full text-sm border-collapse">
           <thead>
             <tr>
-              <th rowspan="2" class="bg-[#1E4076] text-white font-semibold text-left px-3 py-3 border border-[#2C528C] align-bottom">Plant</th>
-              <th rowspan="2" class="bg-[#1E4076] text-white font-semibold text-right px-3 py-3 border border-[#2C528C] align-bottom whitespace-nowrap">Gross LT<br><span class="font-normal text-white/70 text-xs">(hari)</span></th>
-              <th colspan="4" class="bg-[#8F3B36] text-white font-semibold px-3 py-2 border border-[#A04A45]">Upstream Stage — hari</th>
-              <th colspan="3" class="bg-[#8F3B36] text-white font-semibold px-3 py-2 border border-[#A04A45]">Downstream Stage — hari</th>
-              <th rowspan="2" class="bg-[#1E4076] text-white font-semibold text-right px-3 py-3 border border-[#2C528C] align-bottom whitespace-nowrap">Nett LT<br><span class="font-normal text-white/70 text-xs">(hari)</span></th>
-              <th rowspan="2" class="bg-[#1E4076] text-white font-semibold text-right px-3 py-3 border border-[#2C528C] align-bottom whitespace-nowrap">On-Time<br><span class="font-normal text-white/70 text-xs">(%)</span></th>
+              <th rowspan="2" scope="col" class="bg-navy-700 text-white font-semibold text-left px-3 py-3 border border-navy-600 align-bottom">Plant</th>
+              <th rowspan="2" scope="col" class="bg-navy-700 text-white font-semibold text-right px-3 py-3 border border-navy-600 align-bottom whitespace-nowrap">Gross LT<br><span class="font-normal text-white/70 text-xs">(hari)</span></th>
+              <th colspan="4" scope="colgroup" class="bg-brick-600 text-white font-semibold px-3 py-2 border border-brick-500">Upstream Stage — hari</th>
+              <th colspan="3" scope="colgroup" class="bg-brick-600 text-white font-semibold px-3 py-2 border border-brick-500">Downstream Stage — hari</th>
+              <th rowspan="2" scope="col" class="bg-navy-700 text-white font-semibold text-right px-3 py-3 border border-navy-600 align-bottom whitespace-nowrap">Nett LT<br><span class="font-normal text-white/70 text-xs">(hari)</span></th>
+              <th rowspan="2" scope="col" class="bg-navy-700 text-white font-semibold text-right px-3 py-3 border border-navy-600 align-bottom whitespace-nowrap">On-Time<br><span class="font-normal text-white/70 text-xs">(%)</span></th>
             </tr>
-            <tr class="text-xs">
-              <th class="bg-[#A04A45] text-white font-medium text-right px-3 py-2 border border-[#B15A55]">PO</th>
-              <th class="bg-[#A04A45] text-white font-medium text-right px-3 py-2 border border-[#B15A55]">Timbang</th>
-              <th class="bg-[#A04A45] text-white font-medium text-right px-3 py-2 border border-[#B15A55]">Olah</th>
-              <th class="bg-[#A04A45] text-white font-medium text-right px-3 py-2 border border-[#B15A55]">WIP</th>
-              <th class="bg-[#A04A45] text-white font-medium text-right px-3 py-2 border border-[#B15A55]">Kemas 1</th>
-              <th class="bg-[#A04A45] text-white font-medium text-right px-3 py-2 border border-[#B15A55]">Kemas 2</th>
-              <th class="bg-[#A04A45] text-white font-medium text-right px-3 py-2 border border-[#B15A55]">NDC</th>
-            </tr>
+            <tr class="text-xs" id="stageHead"></tr>
           </thead>
           <tbody id="tbody" class="tab-num"></tbody>
         </table>
       </div>
 
-      <div class="flex items-center justify-between px-5 py-3.5 border-t border-slate-200 bg-slate-50">
+      <div id="viewWaterfall" class="hidden px-5 pb-4">
+        <p class="text-xs text-slate-500 mb-3">Komposisi stage per plant · total batang &gt; Gross LT karena sebagian stage berjalan paralel</p>
+        <div class="h-[300px]"><canvas id="cWaterfall"></canvas></div>
+      </div>
+
+      <div class="flex items-center justify-between px-5 py-3.5 border-t border-slate-200 bg-slate-50 flex-wrap gap-3">
         <div class="flex items-center gap-2.5 text-sm">
-          <span class="text-slate-500">Show rows</span>
-          <select class="bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-sm">
-            <option>All</option><option>10</option><option>25</option>
+          <label for="sortSel" class="text-slate-500">Urutkan</label>
+          <select id="sortSel" onchange="renderTable()" class="bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-sm">
+            <option value="name">Nama plant</option>
+            <option value="gross">Gross LT tertinggi</option>
+            <option value="ot">On-Time terendah</option>
           </select>
         </div>
-        <p class="text-sm text-slate-500">Menampilkan seluruh 4 plant · 1.502 PO, 148 dikecualikan (22 cancelled, 118 rework, 8 trial)</p>
+        <p class="text-sm text-slate-500" data-f="tableFoot"></p>
       </div>
     </div>
 
-    <p class="text-xs text-slate-400 mt-4 leading-relaxed">
+    <p id="sec-foot" data-tier-min="operational" class="text-xs text-slate-400 mt-4 leading-relaxed">
       Lead time diagregasi pada grain PO, bukan rata-rata dari rata-rata line · Central tendency P50 dengan P90 pendamping · Standar dicocokkan per SKU dari dim_kpi_target ·
       Lineage: fct_lead_time_po → fct_po_stage → int_po_lifecycle → SAP S/4HANA + EWM + FRO
     </p>
   </main>
 </div>
 
+<!-- toast -->
+<div id="toast" class="fixed left-5 bottom-5 z-[9998] hidden items-center gap-2.5 px-4 py-3 rounded-xl bg-navy-900 text-white text-sm shadow-2xl"></div>
+
 <script>
-/* ---------- sidebar / TV ---------- */
-let sideOpen=true, tvOn=false;
+/* ══════════════════════════════════════════════════════════════
+   1. TARGETS + DATA MODEL
+   Every number on the page is derived from here. Nothing that a
+   filter can change is hardcoded in the markup.
+   ══════════════════════════════════════════════════════════════ */
+const TARGET={oee:65,avail:85,perf:90,qual:98,ltGross:13.0,rft:98,onTime:90,ope:60,prod:50,bulk:3.0,pack:0.5};
+
+/* Network-level figures per period. OEE is never stored — it is always
+   computed as A×P×Q so the pillars and the headline can't disagree. */
+const PERIODS={
+  'Today':       {avail:46.1,perf:83.9,qual:100.0,ltGross:15.42,ltNett:4.88,ltP90:23.1,bulk:2.2,pack:0.3,rft:100.0,batches:18,  pcs:3142880,  kg:166190,   ope:31.2,prod:56.1,onTime:88.9,dLt:-3.6,dLoss:-8.3, dProd:1.4, dOt:1.6, dPcs:2.2, dKg:-6.4,dRft:0,   cmp:'vs kemarin'},
+  'This Week':   {avail:45.6,perf:83.2,qual:100.0,ltGross:15.71,ltNett:4.96,ltP90:23.8,bulk:2.3,pack:0.3,rft:100.0,batches:92,  pcs:16204113, kg:856930,   ope:30.5,prod:55.4,onTime:88.1,dLt:-2.4,dLoss:-11.5,dProd:2.6, dOt:1.7, dPcs:4.6, dKg:-3.1,dRft:0.1, cmp:'WoW'},
+  'Last Week':   {avail:44.2,perf:82.1,qual:99.9, ltGross:16.10,ltNett:5.12,ltP90:24.9,bulk:2.6,pack:0.4,rft:99.9, batches:88,  pcs:15488402, kg:812004,   ope:29.1,prod:54.0,onTime:86.4,dLt:-1.1,dLoss:-4.2, dProd:0.8, dOt:-0.6,dPcs:1.9, dKg:-4.8,dRft:-0.1,cmp:'WoW'},
+  'This Month':  {avail:45.1,perf:82.9,qual:100.0,ltGross:15.84,ltNett:5.01,ltP90:24.2,bulk:2.4,pack:0.3,rft:100.0,batches:231, pcs:41960284, kg:2218301,  ope:30.0,prod:55.0,onTime:87.8,dLt:-2.9,dLoss:-68.4,dProd:2.6, dOt:1.9, dPcs:3.4, dKg:-5.2,dRft:0.2, cmp:'MoM'},
+  'Last Month':  {avail:43.5,perf:81.8,qual:99.8, ltGross:16.32,ltNett:5.20,ltP90:25.3,bulk:7.9,pack:0.5,rft:99.8, batches:268, pcs:44902115, kg:2402770,  ope:28.2,prod:53.6,onTime:85.9,dLt:0.8, dLoss:18.6, dProd:-0.9,dOt:-1.4,dPcs:-2.1,dKg:-1.7,dRft:-0.2,cmp:'MoM'},
+  'Year To Date':{avail:44.8,perf:82.6,qual:100.0,ltGross:15.99,ltNett:5.07,ltP90:24.6,bulk:2.5,pack:0.3,rft:100.0,batches:1502,pcs:276056771,kg:14587201, ope:29.6,prod:54.8,onTime:87.3,dLt:-4.2,dLoss:-68.4,dProd:2.1, dOt:4.0, dPcs:3.9, dKg:-10.5,dRft:0.4,cmp:'YoY'},
+  'Last Year':   {avail:41.9,perf:80.4,qual:99.6, ltGross:17.86,ltNett:5.74,ltP90:27.4,bulk:4.1,pack:0.6,rft:99.6, batches:1948,pcs:341207664,kg:18902554, ope:26.4,prod:51.2,onTime:82.6,dLt:2.3, dLoss:12.4, dProd:-1.6,dOt:-2.8,dPcs:6.2, dKg:4.1, dRft:-0.3,cmp:'YoY'},
+  'Custom Range':{avail:44.5,perf:82.4,qual:100.0,ltGross:16.05,ltNett:5.09,ltP90:24.8,bulk:2.6,pack:0.3,rft:100.0,batches:1388,pcs:254902118,kg:13480662, ope:29.3,prod:54.5,onTime:87.0,dLt:-3.8,dLoss:-64.1,dProd:1.9, dOt:3.6, dPcs:3.5, dKg:-9.8,dRft:0.3, cmp:'vs periode pembanding'}
+};
+
+/* Per-plant modifiers applied to the network figures. Output shares sum to 1,
+   so the four plants add back up to the network total. */
+const PLANTS={
+  'Jatake 1':{availF:1.12,perfF:1.04,qualD:0,   rftD:0,   ltF:0.889,lossF:0.82,share:0.28,prodF:1.07,otD:3.1, trendF:1.30},
+  'Jatake 2':{availF:0.84,perfF:0.95,qualD:-0.3,rftD:-0.6,ltF:1.117,lossF:1.28,share:0.22,prodF:0.91,otD:-4.2,trendF:0.60},
+  'Jatake 3':{availF:1.02,perfF:1.01,qualD:-0.1,rftD:-0.2,ltF:0.963,lossF:0.94,share:0.26,prodF:1.03,otD:0.9, trendF:1.05},
+  'Jatake 4':{availF:0.99,perfF:1.00,qualD:-0.05,rftD:-0.1,ltF:1.031,lossF:1.05,share:0.24,prodF:0.99,otD:0.2,trendF:0.90}
+};
+
+const STAGES  =['PO','Timbang','Olah','WIP','Kemas 1','Kemas 2','NDC'];
+const STAGE_STD=[5.00,1.10,1.00,6.00,1.30,1.40,0.70];
+/* YTD baseline stage split. Other periods scale by ltGross ratio. */
+const STAGE_BASE={
+  'All Plant':[6.35,1.21,0.94,9.30,1.54,1.58,0.62],
+  'Jatake 1' :[5.80,1.05,0.88,8.10,1.38,1.42,0.58],
+  'Jatake 2' :[7.10,1.44,1.09,10.60,1.79,1.81,0.68],
+  'Jatake 3' :[6.15,1.18,0.91,8.90,1.49,1.52,0.61],
+  'Jatake 4' :[6.35,1.17,0.88,9.60,1.50,1.57,0.61]
+};
+const GROSS_BASE={'All Plant':15.99,'Jatake 1':14.22,'Jatake 2':17.86,'Jatake 3':15.40,'Jatake 4':16.48};
+const NETT_BASE ={'All Plant':5.07,'Jatake 1':4.71,'Jatake 2':5.62,'Jatake 3':4.95,'Jatake 4':5.00};
+
+/* ══════════ 2. HELPERS ══════════ */
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+const nf=(v,d=1)=>Number(v).toLocaleString('id-ID',{minimumFractionDigits:d,maximumFractionDigits:d});
+const ni=v=>Math.round(v).toLocaleString('id-ID');
+const pct=(v,d=1)=>nf(v,d)+'%';
+
+const TONE={
+  emerald:{text:'text-emerald-700',bar:'bg-emerald-600',soft:'text-emerald-600'},
+  amber  :{text:'text-amber-600', bar:'bg-amber-500',  soft:'text-amber-600'},
+  rose   :{text:'text-rose-700',  bar:'bg-rose-600',   soft:'text-rose-600'},
+  slate  :{text:'text-slate-500', bar:'bg-slate-300',  soft:'text-slate-400'}
+};
+/* dir 'up' = higher is better */
+function tone(val,target,dir='up'){
+  if(dir==='up') return val>=target?'emerald':val>=target*0.9?'amber':'rose';
+  return val<=target?'emerald':val<=target*1.25?'amber':'rose';
+}
+/* A signed change, coloured by whether that direction is good news. */
+function delta(v,goodDir,suffix='%',d=1){
+  if(Math.abs(v)<0.05) return `<span class="text-slate-400">tidak berubah</span>`;
+  const good=goodDir==='up'?v>0:v<0;
+  const cls=good?'text-emerald-600':'text-rose-600';
+  return `<span class="${cls}">${v>0?'↑':'↓'} ${nf(Math.abs(v),d)}${suffix}</span>`;
+}
+
+/* Deterministic wobble so a reload never reshuffles the trend. */
+const frac=x=>x-Math.floor(x);
+function makeSeries(endVal,n,changePct,seed,dec){
+  const start=endVal*(1-changePct/100),out=[];
+  for(let i=0;i<n;i++){
+    if(i===n-1){out.push(+endVal.toFixed(dec));break}
+    const t=n===1?1:i/(n-1);
+    const wob=(frac(Math.sin((i+1)*12.9898+seed)*43758.5453)-0.5)*endVal*0.045;
+    out.push(+(start+(endVal-start)*t+wob).toFixed(dec));
+  }
+  return out;
+}
+const LEVELS={
+  Daily    :{n:10,labels:i=>String(i+1).padStart(2,'0')},
+  Weekly   :{n:6, labels:i=>'W'+(31+i)},
+  Monthly  :{n:6, labels:i=>['Apr','Mei','Jun','Jul','Agu','Sep'][i]},
+  Quarterly:{n:4, labels:i=>['Q4 25','Q1 26','Q2 26','Q3 26'][i]}
+};
+
+/* ══════════ 3. THE ONE COMPUTE FUNCTION ══════════ */
+function compute(periodKey,plantKey){
+  const p=PERIODS[periodKey],f=PLANTS[plantKey];
+  const k=f?{
+    avail:clamp(p.avail*f.availF,0,100), perf:clamp(p.perf*f.perfF,0,100), qual:clamp(p.qual+f.qualD,0,100),
+    ltGross:p.ltGross*f.ltF, ltNett:p.ltNett*f.ltF, ltP90:p.ltP90*f.ltF,
+    bulk:p.bulk*f.lossF, pack:p.pack*f.lossF,
+    rft:clamp(p.rft+f.rftD,0,100), batches:Math.round(p.batches*f.share),
+    pcs:Math.round(p.pcs*f.share), kg:Math.round(p.kg*f.share),
+    ope:p.ope*f.availF*f.perfF, prod:p.prod*f.prodF, onTime:clamp(p.onTime+f.otD,0,100),
+    dLt:p.dLt*f.trendF, dLoss:p.dLoss*f.trendF, dProd:p.dProd*f.trendF,
+    dOt:p.dOt*f.trendF, dPcs:p.dPcs*f.trendF, dKg:p.dKg*f.trendF, dRft:p.dRft, cmp:p.cmp
+  }:{...p};
+
+  k.oee=k.avail*k.perf*k.qual/1e4;
+  k.oeeGap=TARGET.oee-k.oee;
+  k.opeGap=TARGET.ope-k.ope;
+  /* loss mass is relative to input, so gross it up from released output */
+  const lossPct=(k.bulk+k.pack)/100;
+  k.lossKg=Math.round(k.kg/(1-lossPct)*lossPct);
+  /* which pillar is furthest from its own target */
+  k.pillars=[
+    {name:'Availability',val:k.avail,target:TARGET.avail,gap:TARGET.avail-k.avail},
+    {name:'Performance', val:k.perf, target:TARGET.perf, gap:TARGET.perf-k.perf},
+    {name:'Quality',     val:k.qual, target:TARGET.qual, gap:TARGET.qual-k.qual}
+  ].sort((a,b)=>b.gap-a.gap);
+  return k;
+}
+
+function stagesFor(plantKey,periodKey){
+  const scale=PERIODS[periodKey].ltGross/PERIODS['Year To Date'].ltGross;
+  return STAGE_BASE[plantKey].map(v=>+(v*scale).toFixed(2));
+}
+function rowFor(plantKey,periodKey){
+  const scale=PERIODS[periodKey].ltGross/PERIODS['Year To Date'].ltGross;
+  const k=compute(periodKey,plantKey);
+  return {name:plantKey,isNet:plantKey==='All Plant',
+    gross:+(GROSS_BASE[plantKey]*scale).toFixed(2),
+    nett:+(NETT_BASE[plantKey]*scale).toFixed(2),
+    stages:stagesFor(plantKey,periodKey), ot:k.onTime};
+}
+
+/* ══════════ 4. ALERTS ══════════ */
+function buildAlerts(k){
+  const a=[];
+  if(k.oeeGap>0) a.push({sev:k.oeeGap>15?'critical':'warning',kpi:'OEE',
+    msg:`${pct(k.oee)} — ${k.oeeGap>15?'jauh ':''}di bawah target ${pct(TARGET.oee)}, gap ${nf(k.oeeGap)} poin`,to:'#sec-hero'});
+  const ltGap=k.ltGross-TARGET.ltGross;
+  if(ltGap>0) a.push({sev:k.ltGross>TARGET.ltGross*1.25?'critical':'warning',kpi:'Lead Time',
+    msg:`${nf(k.ltGross,2)} hari gross — ${nf(ltGap,2)} hari di atas standar ${nf(TARGET.ltGross)} hari`,to:'#sec-table'});
+  if(k.rft<TARGET.rft) a.push({sev:'critical',kpi:'Right First Time',
+    msg:`${pct(k.rft)} — di bawah ambang mutu ${pct(TARGET.rft)}`,to:'#sec-kpi1'});
+  if(k.bulk>TARGET.bulk) a.push({sev:'warning',kpi:'Bulk Loss',
+    msg:`${pct(k.bulk)} — ${nf(k.bulk-TARGET.bulk)} poin di atas batas ${pct(TARGET.bulk)}`,to:'#sec-kpi1'});
+  if(k.onTime<TARGET.onTime) a.push({sev:'warning',kpi:'On-Time PO',
+    msg:`${pct(k.onTime)} — ${nf(TARGET.onTime-k.onTime)} poin di bawah target ${pct(TARGET.onTime)}`,to:'#sec-kpi2'});
+  return a.sort((x,y)=>(x.sev==='critical'?0:1)-(y.sev==='critical'?0:1));
+}
+
+function aiSummary(k,plantLabel){
+  const w=k.pillars[0];
+  const lossWord=k.dLoss<0?'turun':'naik';
+  const worst=w.gap<=0
+    ? `ketiga pilar OEE sudah memenuhi target masing-masing — fokus berikutnya menjaga konsistensi antar shift`
+    : `<span class="font-semibold">${w.name}</span> — ${nf(w.gap)} poin di bawah target ${pct(w.target)}`;
+  return `OEE ${plantLabel} berada di <span class="font-bold underline decoration-white/40">${pct(k.oee)}</span>, `
+    + `${k.oeeGap>15?'jauh di bawah':k.oeeGap>0?'di bawah':'di atas'} target ${pct(TARGET.oee)}, `
+    + `dengan Right-First-Time ${pct(k.rft)} dan Pack Loss ${pct(k.pack)}. `
+    + `Bulk Loss ${lossWord} ${nf(Math.abs(k.dLoss))}% ${k.cmp} ke ${pct(k.bulk)}, dan Lead Time Nett `
+    + `<span class="font-bold underline decoration-white/40">${nf(k.ltNett,2)} hari</span>. `
+    + `Prioritas berikutnya: ${worst}.`;
+}
+
+/* ══════════ 5. RENDER ══════════ */
+let tier='strategic', view='table', state={};
+
+function paint(map){
+  for(const key in map){
+    document.querySelectorAll(`[data-f="${key}"]`).forEach(el=>el.innerHTML=map[key]);
+  }
+}
+/* Only the status classes are swapped — the layout classes in the markup stay put. */
+const TONE_CLASSES=['text-emerald-700','text-emerald-600','text-amber-600','text-rose-700',
+  'text-rose-600','text-slate-500','text-slate-400','bg-emerald-600','bg-amber-500','bg-rose-600','bg-slate-300'];
+function paintCls(key,cls){
+  document.querySelectorAll(`[data-f-cls="${key}"]`).forEach(el=>{
+    el.classList.remove(...TONE_CLASSES);
+    el.classList.add(...cls.split(' ').filter(Boolean));
+  });
+}
+
+function render(){
+  const period=state.period,plant=state.plant,level=state.level;
+  const k=compute(period,plant);
+  const plantLabel=plant==='All Plant'?'seluruh plant':plant;
+  const alerts=buildAlerts(k);
+  const crit=alerts.filter(a=>a.sev==='critical').length;
+  const warn=alerts.length-crit;
+
+  const ctxLabel=period==='Custom Range'
+    ? `${fmtDate(document.getElementById('dStart').value)} – ${fmtDate(document.getElementById('dEnd').value)}`
+    : period;
+
+  paint({
+    ctxLabel, ctxPlant:plant, lvlLabel:level,
+    aiSummary:aiSummary(k,plantLabel),
+    alertCount:alerts.length,
+    critBadge:crit?`${crit} Critical`:'', warnBadge:warn?`${warn} Warning`:'',
+    oee:nf(k.oee), oeeTarget:nf(TARGET.oee), oeeGap:`${nf(Math.abs(k.oeeGap))} poin`,
+    avail:nf(k.avail), perf:nf(k.perf), qual:nf(k.qual),
+    availNote:pillarNote(k,0), perfNote:pillarNote(k,1), qualNote:pillarNote(k,2),
+    ltGross:nf(k.ltGross,2), ltNett:nf(k.ltNett,2), ltP90:nf(k.ltP90,1), ltTarget:nf(TARGET.ltGross),
+    ltDelta:delta(k.dLt,'down','%')+` <span class="text-slate-400">${k.cmp}</span>`,
+    bulk:nf(k.bulk), pack:nf(k.pack), lossKg:ni(k.lossKg),
+    lossDelta:delta(k.dLoss,'down','%')+` <span class="text-slate-400">${k.cmp}</span>`,
+    rft:nf(k.rft), batches:ni(k.batches), rftDelta:delta(k.dRft,'up',' pp'),
+    rftNote:k.rft>=TARGET.rft?`✓ memenuhi target ${pct(TARGET.rft)}`:`di bawah target ${pct(TARGET.rft)}`,
+    pcs:ni(k.pcs), kg:ni(k.kg),
+    pcsDelta:delta(k.dPcs,'up','%'), kgDelta:delta(k.dKg,'up','%'),
+    ope:nf(k.ope), opeTarget:nf(TARGET.ope), opeGap:`gap ${nf(Math.abs(k.opeGap))} pts`,
+    prod:nf(k.prod), prodTarget:nf(TARGET.prod), prodDelta:delta(k.dProd,'up','%')+` <span class="text-slate-400">${k.cmp}</span>`,
+    onTime:nf(k.onTime), otTarget:nf(TARGET.onTime), otDelta:delta(k.dOt,'up',' pp'),
+    tableFoot:tableFoot(k,plant)
+  });
+
+  /* status colours */
+  const t=n=>TONE[n];
+  const oeeT=tone(k.oee,TARGET.oee), ltT=tone(k.ltGross,TARGET.ltGross,'down'),
+        opeT=tone(k.ope,TARGET.ope), prodT=tone(k.prod,TARGET.prod), otT=tone(k.onTime,TARGET.onTime);
+  paintCls('heroBar',t(oeeT).bar);   paintCls('oeeText',t(oeeT).text);
+  paintCls('availText',t(tone(k.avail,TARGET.avail)).text);
+  paintCls('perfText', t(tone(k.perf, TARGET.perf)).text);
+  paintCls('qualText', t(tone(k.qual, TARGET.qual)).text);
+  ['avail','perf','qual'].forEach((p,i)=>{
+    const met=[k.avail>=TARGET.avail,k.perf>=TARGET.perf,k.qual>=TARGET.qual][i];
+    const worst=k.pillars[0].name.toLowerCase().startsWith(p);
+    paintCls(p+'NoteCls',met?'text-emerald-600':worst?'text-rose-600':'text-slate-400');
+  });
+  paintCls('ltBar',t(ltT).bar);      paintCls('ltText',t(ltT).text);
+  paintCls('lossBar',t(tone(k.bulk,TARGET.bulk,'down')).bar);
+  paintCls('rftBar',t(tone(k.rft,TARGET.rft)).bar);
+  paintCls('rftNoteCls',k.rft>=TARGET.rft?'text-emerald-600':'text-rose-600');
+  paintCls('opeBar',t(opeT).bar);    paintCls('opeText',t(opeT).text);
+  paintCls('prodBar',t(prodT).bar);  paintCls('prodText',t(prodT).text);
+  paintCls('otBar',t(otT).bar);      paintCls('otText',t(otT).text);
+
+  renderAlerts(alerts);
+  renderCharts(k);
+  renderTable();
+  document.getElementById('bellChip').className=
+    'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm tv-hide '+
+    (crit?'bg-rose-400/25 text-rose-200 hover:bg-rose-400/35':'bg-amber-400/20 text-amber-200 hover:bg-amber-400/30');
+  lucide.createIcons();
+}
+
+function pillarNote(k,i){
+  const p=[{v:k.avail,t:TARGET.avail},{v:k.perf,t:TARGET.perf},{v:k.qual,t:TARGET.qual}][i];
+  const name=['Availability','Performance','Quality'][i];
+  if(p.v>=p.t) return 'memenuhi target';
+  if(k.pillars[0].name===name) return 'penyumbang gap utama';
+  return `target ${pct(p.t)}`;
+}
+
+function tableFoot(k,plant){
+  const excl=Math.round(k.batches*0.0985);
+  const shown=plant==='All Plant'?'seluruh 4 plant':plant+' · dibanding network';
+  return `Menampilkan ${shown} · ${ni(k.batches)} PO, ${ni(excl)} dikecualikan (cancelled, rework, trial)`;
+}
+
+function renderAlerts(alerts){
+  const box=document.getElementById('alertList');
+  if(!alerts.length){
+    box.innerHTML=`<div class="flex items-center gap-3 px-5 py-4 text-sm text-emerald-700 bg-emerald-50/60">
+      <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-600 text-white">CLEAR</span>
+      Semua KPI berada dalam ambang target untuk filter ini.</div>`;
+    return;
+  }
+  box.innerHTML=alerts.map(a=>{
+    const c=a.sev==='critical';
+    return `<div class="flex items-center gap-3 px-5 py-3 ${c?'bg-rose-50/60':''} flex-wrap">
+      <span class="px-2 py-0.5 rounded text-[11px] font-bold ${c?'bg-rose-600':'bg-amber-500'} text-white">${c?'CRITICAL':'WARNING'}</span>
+      <span class="font-semibold text-slate-800 text-sm w-32">${a.kpi}</span>
+      <span class="text-sm text-slate-600">${a.msg}</span>
+      <button onclick="jump('${a.to}')" class="ml-auto text-xs font-medium text-navy-700 hover:underline shrink-0">Buka analisis →</button>
+    </div>`;
+  }).join('');
+}
+
+/* ══════════ 6. TABLE ══════════ */
+document.getElementById('stageHead').innerHTML=STAGES.map(s=>
+  `<th scope="col" class="bg-brick-500 text-white font-medium text-right px-3 py-2 border border-brick-400">${s}</th>`).join('');
+
+function renderTable(){
+  const {period,plant}=state;
+  if(!period) return;
+  let rows=plant==='All Plant'
+    ? ['All Plant','Jatake 1','Jatake 2','Jatake 3','Jatake 4'].map(p=>rowFor(p,period))
+    : [rowFor('All Plant',period),rowFor(plant,period)];
+
+  const sort=document.getElementById('sortSel').value;
+  const net=rows.filter(r=>r.isNet),rest=rows.filter(r=>!r.isNet);
+  if(sort==='gross') rest.sort((a,b)=>b.gross-a.gross);
+  else if(sort==='ot') rest.sort((a,b)=>a.ot-b.ot);
+  else rest.sort((a,b)=>a.name.localeCompare(b.name));
+  rows=[...net,...rest];
+
+  document.getElementById('tbody').innerHTML=rows.map(r=>{
+    const label=r.isNet?'NETWORK (semua plant)':r.name;
+    const otColor=r.ot>=90?'text-emerald-700':r.ot>=85?'text-amber-700':'text-rose-700';
+    return `<tr class="${r.isNet?'bg-navy-50 font-semibold':''} hover:bg-slate-50">
+      <th scope="row" class="px-3 py-2.5 border border-slate-200 text-navy-700 text-left ${r.isNet?'font-bold':'font-medium'}">${label}</th>
+      <td class="px-3 py-2.5 border border-slate-200 text-right font-semibold">${nf(r.gross,2)}</td>
+      ${r.stages.map((v,i)=>{
+        const over=v>STAGE_STD[i],heavy=v>STAGE_STD[i]*1.3;
+        return `<td class="px-3 py-2.5 border border-slate-200 text-right ${heavy?'bg-brick-100 text-brick-700 font-semibold':over?'bg-brick-50':''}"
+          title="standar ${nf(STAGE_STD[i],2)} hari · gap ${v-STAGE_STD[i]>0?'+':''}${nf(v-STAGE_STD[i],2)}">${nf(v,2)}</td>`;
+      }).join('')}
+      <td class="px-3 py-2.5 border border-slate-200 text-right bg-navy-50 font-semibold">${nf(r.nett,2)}</td>
+      <td class="px-3 py-2.5 border border-slate-200 text-right font-semibold ${otColor}">${pct(r.ot)}</td>
+    </tr>`;
+  }).join('');
+
+  if(view==='waterfall') renderWaterfall(rows);
+}
+
+/* ══════════ 7. CHARTS ══════════ */
+const NAVY='#1E4076',ROSE='#B3271E',AMBER='#C07C1A';
+const STAGE_COLORS=['#1E4076','#2C528C','#4A73B0','#7E9CCB','#8F3B36','#B15A55','#D49B96'];
+Chart.defaults.font.family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif";
+Chart.defaults.color='#64748B';
+const TT={backgroundColor:'#16305C',padding:10,cornerRadius:6,boxPadding:4};
+let cSpark,cMain,cStage,cWater;
+
+function renderCharts(k){
+  const L=LEVELS[state.level];
+  const labels=Array.from({length:L.n},(_,i)=>L.labels(i));
+  const oeeSeries=makeSeries(k.oee,L.n,11,7,1);
+  const ltSeries =makeSeries(k.ltGross,L.n,-8,3,2);
+
+  /* hero sparkline — 24 points of the same OEE story */
+  const spark=makeSeries(k.oee,24,16,11,1);
+  if(!cSpark){
+    cSpark=new Chart(document.getElementById('heroSpark'),{
+      type:'line',
+      data:{labels:Array(24).fill(''),datasets:[{data:spark,borderColor:ROSE,borderWidth:1.8,
+        pointRadius:0,tension:.3,fill:true,backgroundColor:'rgba(179,39,30,.07)'}]},
+      options:{maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{enabled:false}},
+        scales:{x:{display:false},y:{display:false}}}});
+  }else{
+    cSpark.data.datasets[0].data=spark;
+    const col=k.oee>=TARGET.oee?'#1F7A4D':k.oee>=TARGET.oee*0.9?'#C07C1A':ROSE;
+    cSpark.data.datasets[0].borderColor=col;
+    cSpark.data.datasets[0].backgroundColor=col+'12';
+    cSpark.update('none');
+  }
+
+  /* main combo chart */
+  const cfgMain={
+    labels,datasets:[
+      {type:'bar',label:'OEE (%)',data:oeeSeries,backgroundColor:'rgba(30,64,118,.85)',
+       borderRadius:4,barPercentage:.55,yAxisID:'y',order:3},
+      {type:'line',label:`Target OEE ${nf(TARGET.oee)}%`,data:Array(L.n).fill(TARGET.oee),borderColor:NAVY,
+       borderWidth:1.5,borderDash:[6,4],pointRadius:0,yAxisID:'y',order:1},
+      {type:'line',label:'Lead Time (hari)',data:ltSeries,borderColor:AMBER,
+       borderWidth:2.5,pointRadius:3.5,pointBackgroundColor:AMBER,tension:.3,yAxisID:'y1',order:0}
+    ]};
+  if(!cMain){
+    cMain=new Chart(document.getElementById('cMain'),{data:cfgMain,
+      options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+        plugins:{tooltip:TT,legend:{position:'bottom',labels:{usePointStyle:true,boxWidth:18,padding:14,font:{size:11}}}},
+        scales:{
+          x:{grid:{display:false}},
+          y :{position:'left',min:0,max:100,grid:{color:'#E2E8F0'},title:{display:true,text:'OEE (%)',font:{size:11,weight:'600'}}},
+          y1:{position:'right',min:0,grid:{display:false},title:{display:true,text:'Lead Time (hari)',font:{size:11,weight:'600'}}}
+        }}});
+  }else{
+    cMain.data=cfgMain; cMain.update();
+  }
+
+  /* stage chart — sorted by gap to standard */
+  const st=stagesFor(state.plant,state.period)
+    .map((v,i)=>({name:STAGES[i],v,std:STAGE_STD[i],gap:v-STAGE_STD[i]}))
+    .sort((a,b)=>b.gap-a.gap);
+  const cfgStage={
+    labels:st.map(s=>s.name),
+    datasets:[
+      {type:'bar',label:'Aktual',data:st.map(s=>s.v),barPercentage:.62,borderRadius:4,
+       backgroundColor:st.map(s=>s.gap>1?ROSE:s.gap>0?AMBER:'rgba(30,64,118,.85)')},
+      {type:'line',label:'Standar',data:st.map(s=>s.std),showLine:false,pointStyle:'line',
+       pointRadius:13,pointBorderWidth:2.5,pointBorderColor:'#16305C'}
+    ]};
+  if(!cStage){
+    cStage=new Chart(document.getElementById('cStage'),{data:cfgStage,
+      options:{indexAxis:'y',maintainAspectRatio:false,
+        plugins:{tooltip:{...TT,callbacks:{afterBody:c=>{
+          const g=st[c[0].dataIndex].gap; return `Gap: ${g>0?'+':''}${nf(g,2)} hari`;}}},
+          legend:{position:'bottom',labels:{usePointStyle:true,boxWidth:18,padding:12,font:{size:11}}}},
+        scales:{x:{beginAtZero:true,grid:{color:'#E2E8F0'},title:{display:true,text:'Hari',font:{size:11,weight:'600'}}},
+                y:{grid:{display:false}}}}});
+  }else{
+    cStage.data=cfgStage;
+    cStage.options.plugins.tooltip.callbacks.afterBody=c=>{
+      const g=st[c[0].dataIndex].gap; return `Gap: ${g>0?'+':''}${nf(g,2)} hari`;};
+    cStage.update();
+  }
+}
+
+function renderWaterfall(rows){
+  const cfg={
+    labels:rows.map(r=>r.isNet?'NETWORK':r.name),
+    datasets:STAGES.map((s,i)=>({label:s,data:rows.map(r=>r.stages[i]),
+      backgroundColor:STAGE_COLORS[i],borderRadius:i===STAGES.length-1?{topRight:4,bottomRight:4}:0,
+      barPercentage:.7,stack:'lt'}))
+  };
+  if(!cWater){
+    cWater=new Chart(document.getElementById('cWaterfall'),{type:'bar',data:cfg,
+      options:{indexAxis:'y',maintainAspectRatio:false,
+        plugins:{tooltip:{...TT,callbacks:{label:c=>` ${c.dataset.label}: ${nf(c.parsed.x,2)} hari`}},
+          legend:{position:'bottom',labels:{usePointStyle:true,boxWidth:14,padding:10,font:{size:11}}}},
+        scales:{x:{stacked:true,beginAtZero:true,grid:{color:'#E2E8F0'},
+                   title:{display:true,text:'Hari (akumulasi stage)',font:{size:11,weight:'600'}}},
+                y:{stacked:true,grid:{display:false}}}}});
+  }else{ cWater.data=cfg; cWater.update(); }
+}
+
+/* ══════════ 8. CONTROLS ══════════ */
+function fmtDate(v){
+  if(!v) return '—';
+  const d=new Date(v+'T00:00:00');
+  return d.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
+}
+
+function apply(showBusy){
+  const period=document.getElementById('quickFilter').value;
+  const custom=period==='Custom Range';
+  const cr=document.getElementById('customRange');
+  cr.classList.toggle('hidden',!custom);
+  cr.classList.toggle('flex',custom);
+
+  state={period,plant:document.getElementById('plantSel').value,level:document.getElementById('levelSel').value};
+
+  const main=document.querySelector('main');
+  if(showBusy){
+    main.classList.add('busy');
+    setTimeout(()=>{render();main.classList.remove('busy');stampRefresh();},180);
+  }else{
+    render();
+  }
+}
+
+function setTier(t){
+  tier=t;
+  const RANK={strategic:1,tactical:2,operational:3};
+  document.querySelectorAll('[data-tier]').forEach(b=>{
+    b.className=b.dataset.tier===t
+      ? 'px-4 py-1.5 rounded-md text-sm font-semibold bg-white text-navy-700'
+      : 'px-4 py-1.5 rounded-md text-sm text-white/80 hover:text-white';
+  });
+  document.querySelectorAll('[data-tier-min]').forEach(el=>{
+    el.classList.toggle('hidden',RANK[el.dataset.tierMin]>RANK[t]);
+  });
+  /* the trend chart takes the full row when the stage chart is hidden */
+  const full=RANK.tactical>RANK[t];
+  document.getElementById('cardMain').classList.toggle('xl:col-span-2',!full);
+  document.getElementById('cardMain').classList.toggle('xl:col-span-3',full);
+  const ts=document.getElementById('tierSel'); if(ts) ts.value=t;
+  document.getElementById('tierNote').textContent={
+    strategic:'Tampilan Strategic — ringkasan eksekutif, detail per stage disembunyikan.',
+    tactical:'Tampilan Tactical — ditambah KPI equipment/people dan breakdown per stage.',
+    operational:''
+  }[t];
+  [cMain,cStage,cWater].forEach(c=>c&&c.resize());
+}
+
+function setView(v){
+  view=v;
+  document.querySelectorAll('[data-view]').forEach(b=>{
+    b.className=b.dataset.view===v
+      ? 'px-4 py-1.5 rounded-full text-sm font-semibold bg-navy-700 text-white'
+      : 'px-4 py-1.5 rounded-full text-sm text-slate-600';
+  });
+  document.getElementById('viewTable').classList.toggle('hidden',v!=='table');
+  document.getElementById('viewWaterfall').classList.toggle('hidden',v!=='waterfall');
+  renderTable();
+  if(v==='waterfall'&&cWater) cWater.resize();
+}
+
+let sideOpen=true,tvOn=false,sideBeforeTV=true;
 function toggleSidebar(){
   sideOpen=!sideOpen;
-  const s=document.getElementById('sidebar');
-  s.style.display = sideOpen ? '' : 'none';
-  document.getElementById('icoSide').setAttribute('data-lucide', sideOpen?'panel-left-close':'panel-left-open');
+  document.getElementById('sidebar').style.display=sideOpen?'':'none';
+  document.getElementById('scrim').classList.toggle('on',sideOpen&&innerWidth<1024);
+  document.getElementById('icoSide').setAttribute('data-lucide',sideOpen?'panel-left-close':'panel-left-open');
   lucide.createIcons();
 }
 function toggleTV(){
   tvOn=!tvOn;
   document.body.classList.toggle('tv',tvOn);
-  document.getElementById('tvLabel').textContent = tvOn?'Keluar TV':'TV Mode';
-  if(tvOn && sideOpen) toggleSidebar();
-  if(!tvOn && !sideOpen) toggleSidebar();
-  Object.values(Chart.instances).forEach(c=>c.resize());
-}
-function setTier(btn,t){
-  document.querySelectorAll('[data-tier]').forEach(b=>b.className='px-4 py-1.5 rounded-md text-sm text-white/80 hover:text-white');
-  btn.className='px-4 py-1.5 rounded-md text-sm font-semibold bg-white text-[#1E4076]';
+  document.getElementById('tvLabel').textContent=tvOn?'Keluar TV':'TV Mode';
+  if(tvOn){ sideBeforeTV=sideOpen; if(sideOpen) toggleSidebar(); }
+  else if(sideBeforeTV&&!sideOpen) toggleSidebar();
+  [cSpark,cMain,cStage,cWater].forEach(c=>c&&c.resize());
 }
 
-/* ---------- filters ---------- */
-function onQuick(){
-  const v=document.getElementById('quickFilter').value;
-  const cr=document.getElementById('customRange');
-  const custom = v==='Custom Range';
-  cr.classList.toggle('hidden',!custom);
-  cr.classList.toggle('flex',custom);
-  document.getElementById('ctxLabel').textContent = custom ? '01 Jan 2026 – 10 Sep 2026' : v;
-}
-function onPlant(){ document.getElementById('ctxPlant').textContent=document.getElementById('plantSel').value; }
-function onLevel(){
-  const v=document.getElementById('levelSel').value;
-  document.getElementById('lvlLabel').textContent=v;
-  const sets={
-    Daily:{l:['01','02','03','04','05','06','07','08','09','10'],o:[35,36,34,38,37,39,36,38,37,37],lt:[16.4,16.2,16.5,15.9,16.1,15.8,16.0,15.9,16.0,15.99]},
-    Weekly:{l:['W31','W32','W33','W34','W35','W36'],o:[33,34,36,35,37,37],lt:[17.2,16.9,16.4,16.2,16.1,15.99]},
-    Monthly:{l:['Apr','Mei','Jun','Jul','Agu','Sep'],o:[31,32,34,35,36,37],lt:[18.4,17.9,17.2,16.8,16.3,15.99]},
-    Quarterly:{l:['Q4 25','Q1 26','Q2 26','Q3 26'],o:[29,32,35,37],lt:[19.8,18.2,16.9,15.99]}
-  }[v];
-  main.data.labels=sets.l;
-  main.data.datasets[0].data=sets.o;
-  main.data.datasets[1].data=Array(sets.l.length).fill(65);
-  main.data.datasets[2].data=sets.lt;
-  main.update();
-}
-
-/* ---------- charts ---------- */
-const NAVY='#1E4076', ROSE='#B3271E', AMBER='#C07C1A', EMERALD='#1F7A4D', GREY='#94A3B8';
-Chart.defaults.font.family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif";
-Chart.defaults.color='#64748B';
-const TT={backgroundColor:'#16305C',padding:10,cornerRadius:6,boxPadding:4};
-
-new Chart(document.getElementById('heroSpark'),{
-  type:'line',
-  data:{labels:Array(24).fill(''),datasets:[{
-    data:[30,33,31,35,34,36,33,37,35,38,36,39,37,35,38,36,39,37,38,36,38,37,38,37],
-    borderColor:ROSE,borderWidth:1.8,pointRadius:0,tension:.3,
-    fill:true,backgroundColor:'rgba(179,39,30,.07)'}]},
-  options:{maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{enabled:false}},
-    scales:{x:{display:false},y:{display:false,min:20,max:45}}}
+/* collapse the sidebar when the window crosses into narrow territory, and
+   bring it back on the way out — otherwise it sits on top of the content. */
+let wasNarrow=innerWidth<1024;
+addEventListener('resize',()=>{
+  const narrow=innerWidth<1024;
+  if(narrow!==wasNarrow){
+    wasNarrow=narrow;
+    if(narrow&&sideOpen) toggleSidebar();
+    if(!narrow&&!sideOpen&&!tvOn) toggleSidebar();
+  }
+  document.getElementById('scrim').classList.toggle('on',sideOpen&&narrow);
 });
 
-const main=new Chart(document.getElementById('cMain'),{
-  data:{labels:['W31','W32','W33','W34','W35','W36'],
-    datasets:[
-      {type:'bar',label:'OEE (%)',data:[33,34,36,35,37,37],backgroundColor:'rgba(30,64,118,.85)',
-       borderRadius:4,barPercentage:.55,yAxisID:'y',order:3},
-      {type:'line',label:'Target OEE 65%',data:Array(6).fill(65),borderColor:NAVY,borderWidth:1.5,
-       borderDash:[6,4],pointRadius:0,yAxisID:'y',order:1},
-      {type:'line',label:'Lead Time (hari)',data:[17.2,16.9,16.4,16.2,16.1,15.99],borderColor:AMBER,
-       borderWidth:2.5,pointRadius:3.5,pointBackgroundColor:AMBER,tension:.3,yAxisID:'y1',order:0}
-    ]},
-  options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
-    plugins:{tooltip:TT,legend:{position:'bottom',labels:{usePointStyle:true,boxWidth:18,padding:14,font:{size:11}}}},
-    scales:{
-      x:{grid:{display:false}},
-      y:{position:'left',min:0,max:100,grid:{color:'#E2E8F0'},
-         title:{display:true,text:'OEE (%)',font:{size:11,weight:'600'}}},
-      y1:{position:'right',min:0,max:25,grid:{display:false},
-         title:{display:true,text:'Lead Time (hari)',font:{size:11,weight:'600'}}}
-    }}
+function jump(sel){
+  const el=document.querySelector(sel);
+  if(!el) return;
+  if(el.classList.contains('hidden')) setTier('operational');
+  el.scrollIntoView({behavior:'smooth',block:'start'});
+  document.querySelectorAll('[data-nav]').forEach(a=>navStyle(a,a.dataset.nav===sel));
+  if(innerWidth<1024&&sideOpen) toggleSidebar();
+}
+function navStyle(a,active){
+  a.className=active
+    ? 'flex items-center gap-3 px-3 py-2.5 rounded-lg bg-navy-50 text-navy-700 font-semibold text-sm cursor-pointer'
+    : 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 text-sm cursor-pointer';
+}
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.innerHTML=`<i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>${msg}`;
+  t.classList.remove('hidden'); t.classList.add('flex');
+  lucide.createIcons();
+  clearTimeout(t._h);
+  t._h=setTimeout(()=>{t.classList.add('hidden');t.classList.remove('flex')},3200);
+}
+
+function copyAlerts(){
+  const k=compute(state.period,state.plant);
+  const lines=buildAlerts(k).map(a=>`• [${a.sev.toUpperCase()}] ${a.kpi} — ${a.msg.replace(/<[^>]+>/g,'')}`);
+  const text=`Control Tower — ${state.plant} · ${state.period}\n`+
+    (lines.length?lines.join('\n'):'Semua KPI dalam ambang target.')+
+    `\n\nDiambil ${new Date().toLocaleString('id-ID',{timeZone:'Asia/Jakarta'})} WIB`;
+  (navigator.clipboard?.writeText(text)||Promise.reject())
+    .then(()=>toast('Ringkasan alert disalin — tempel ke Teams'))
+    .catch(()=>toast('Tidak bisa menyalin otomatis di browser ini'));
+}
+
+/* ══════════ 9. LIVE CLOCK ══════════ */
+const CYCLE=60*60; /* one refresh cycle, in seconds */
+let left=CYCLE;
+function stampRefresh(){
+  left=CYCLE;
+  document.getElementById('lastRefresh').textContent=
+    new Date().toLocaleTimeString('id-ID',{timeZone:'Asia/Jakarta',hour:'2-digit',minute:'2-digit'});
+}
+setInterval(()=>{
+  left=left>0?left-1:CYCLE;
+  const m=String(Math.floor(left/60)).padStart(2,'0'),s=String(left%60).padStart(2,'0');
+  document.getElementById('liveClock').textContent=`${m}:${s}`;
+  const mins=Math.round((CYCLE-left)/60);
+  document.getElementById('aiAge').textContent=mins<1?'baru saja':`${mins} menit lalu`;
+  if(left===CYCLE){render();stampRefresh()}
+},1000);
+
+/* ══════════ 10. BOOT ══════════ */
+document.querySelectorAll('[data-nav]').forEach(a=>{
+  navStyle(a,a.dataset.nav==='#top');
+  a.addEventListener('click',e=>{e.preventDefault();jump(a.dataset.nav)});
 });
-
-const stg=['WIP','PO','Kemas 2','Kemas 1','Timbang','Olah','NDC'];
-const act=[9.30,6.35,1.58,1.54,1.21,0.94,0.62];
-const std=[6.00,5.00,1.40,1.30,1.10,1.00,0.70];
-new Chart(document.getElementById('cStage'),{
-  data:{labels:stg,datasets:[
-    {type:'bar',label:'Aktual',data:act,barPercentage:.62,borderRadius:4,
-     backgroundColor:act.map((a,i)=>a-std[i]>1?ROSE:a-std[i]>0?AMBER:'rgba(30,64,118,.85)')},
-    {type:'line',label:'Standar',data:std,showLine:false,pointStyle:'line',pointRadius:13,
-     pointBorderWidth:2.5,pointBorderColor:'#16305C'}
-  ]},
-  options:{indexAxis:'y',maintainAspectRatio:false,
-    plugins:{tooltip:{...TT,callbacks:{afterBody:c=>{
-      const i=c[0].dataIndex,g=(act[i]-std[i]).toFixed(2);
-      return `Gap: ${g>0?'+':''}${g} hari`;}}},
-      legend:{position:'bottom',labels:{usePointStyle:true,boxWidth:18,padding:12,font:{size:11}}}},
-    scales:{
-      x:{beginAtZero:true,grid:{color:'#E2E8F0'},title:{display:true,text:'Hari',font:{size:11,weight:'600'}}},
-      y:{grid:{display:false}}
-    }}
-});
-
-/* ---------- breakdown table ---------- */
-const plants=[
-  ['NETWORK (semua plant)',15.99,6.35,1.21,0.94,9.30,1.54,1.58,0.62,5.07,87.3,true],
-  ['Jatake 1',14.22,5.80,1.05,0.88,8.10,1.38,1.42,0.58,4.71,90.4,false],
-  ['Jatake 2',17.86,7.10,1.44,1.09,10.60,1.79,1.81,0.68,5.62,83.1,false],
-  ['Jatake 3',15.40,6.15,1.18,0.91,8.90,1.49,1.52,0.61,4.95,88.2,false],
-  ['Jatake 4',16.48,6.35,1.17,0.88,9.60,1.50,1.57,0.61,5.00,87.5,false]
-];
-const stdCols=[5.00,1.10,1.00,6.00,1.30,1.40,0.70];
-document.getElementById('tbody').innerHTML = plants.map(p=>{
-  const [name,gross,...rest]=p;
-  const cells=rest.slice(0,7), nett=rest[7], ot=rest[8], isNet=rest[9];
-  const rowBg = isNet ? 'bg-[#EEF4FB] font-semibold' : '';
-  const otColor = ot>=90?'text-emerald-700':ot>=85?'text-amber-700':'text-rose-700';
-  return `<tr class="${rowBg} hover:bg-slate-50">
-    <td class="px-3 py-2.5 border border-slate-200 text-[#1E4076] ${isNet?'font-bold':'font-medium'}">${name}</td>
-    <td class="px-3 py-2.5 border border-slate-200 text-right font-semibold">${gross.toFixed(2)}</td>
-    ${cells.map((v,i)=>{
-      const over=v>stdCols[i];
-      const heavy=v>stdCols[i]*1.3;
-      return `<td class="px-3 py-2.5 border border-slate-200 text-right ${heavy?'bg-[#F4DAD7] text-[#7C332F] font-semibold':over?'bg-[#FBEDEB]':''}">${v.toFixed(2)}</td>`;
-    }).join('')}
-    <td class="px-3 py-2.5 border border-slate-200 text-right bg-[#EEF4FB] font-semibold">${nett.toFixed(2)}</td>
-    <td class="px-3 py-2.5 border border-slate-200 text-right font-semibold ${otColor}">${ot.toFixed(1)}%</td>
-  </tr>`;
-}).join('');
-
-onQuick(); lucide.createIcons();
+apply();
+setView('table');
+setTier('strategic');
+stampRefresh();
+if(innerWidth<1024) toggleSidebar();
+lucide.createIcons();
 </script>
 </body>
 </html>
